@@ -1,0 +1,17 @@
+# AWS SDKs
+boto3>=1.26.0
+botocore>=1.29.0
+
+# Database drivers
+psycopg2-binary>=2.9.0  # PostgreSQL
+PyMySQL>=1.0.0         # MySQL/MariaDB
+
+# Data processing
+pandas>=1.5.0
+
+# Configuration management
+python-dotenv>=0.21.0
+
+# Optional: for performance and async operations
+asyncio>=3.4.3
+aiofiles>=22.0.0
