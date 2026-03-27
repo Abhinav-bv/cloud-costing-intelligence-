@@ -1,152 +1,189 @@
 """
 aws_utils.py
-AWS RDS connection utilities and database operations
+AWS SDK helpers for cost intelligence data pipeline.
 """
 
-import psycopg2
-import pymysql
-import json
-from typing import List, Dict, Any
-from config import AWS_RDS_CONFIG
+import boto3
+import logging
+from typing import Dict, List, Any
+from datetime import datetime, timedelta
 
-class RDSConnection:
-    """Handle AWS RDS connections based on engine type"""
+logger = logging.getLogger(__name__)
+
+
+class CostExplorerCollector:
+    """Collect cost and usage data from AWS Cost Explorer"""
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or AWS_RDS_CONFIG
-        self.connection = None
-        self.cursor = None
+    def __init__(self, region: str = "us-east-1"):
+        self.client = boto3.client("ce", region_name=region)
     
-    def connect(self):
-        """Establish connection to AWS RDS"""
-        try:
-            engine = self.config.get("engine", "postgres")
-            
-            if engine == "postgres":
-                self.connection = psycopg2.connect(
-                    host=self.config["host"],
-                    port=self.config["port"],
-                    database=self.config["database"],
-                    user=self.config["user"],
-                    password=self.config["password"]
-                )
-            elif engine == "mysql" or engine == "mariadb":
-                self.connection = pymysql.connect(
-                    host=self.config["host"],
-                    port=self.config["port"],
-                    database=self.config["database"],
-                    user=self.config["user"],
-                    password=self.config["password"]
-                )
-            else:
-                raise ValueError(f"Unsupported database engine: {engine}")
-            
-            self.cursor = self.connection.cursor()
-            print(f"✅ Connected to AWS RDS ({engine})")
-            return self
+    def get_cost_data(self, start_date: str, end_date: str,
+                     granularity: str = "DAILY",
+                     metrics: List[str] = None) -> Dict[str, Any]:
+        """
+        Fetch cost and usage data from AWS Cost Explorer.
         
-        except Exception as e:
-            print(f"❌ Failed to connect to AWS RDS: {e}")
-            raise
-    
-    def close(self):
-        """Close RDS connection"""
-        if self.cursor:
-            self.cursor.close()
-        if self.connection:
-            self.connection.close()
-            print("✅ RDS connection closed")
-    
-    def execute(self, query: str, params: tuple = None):
-        """Execute a single query"""
+        Args:
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
+            granularity: DAILY, MONTHLY
+            metrics: Cost metrics to retrieve (default: UnblendedCost)
+        
+        Returns:
+            Cost and usage data grouped by service or dimension
+        """
+        if metrics is None:
+            metrics = ["UnblendedCost"]
+        
         try:
-            if params:
-                self.cursor.execute(query, params)
-            else:
-                self.cursor.execute(query)
-            return self.cursor
-        except Exception as e:
-            print(f"❌ Query execution error: {e}")
-            raise
-    
-    def executemany(self, query: str, data: List[tuple]):
-        """Execute multiple queries (for bulk inserts)"""
-        try:
-            self.cursor.executemany(query, data)
-            return self.cursor.rowcount
-        except Exception as e:
-            print(f"❌ Batch execution error: {e}")
-            raise
-    
-    def commit(self):
-        """Commit transaction"""
-        self.connection.commit()
-    
-    def rollback(self):
-        """Rollback transaction"""
-        self.connection.rollback()
-    
-    def fetchall(self):
-        """Fetch all results"""
-        return self.cursor.fetchall()
-    
-    def fetchone(self):
-        """Fetch single result"""
-        return self.cursor.fetchone()
-
-
-def create_rds_tables():
-    """Create tables in AWS RDS if they don't exist"""
-    rds = RDSConnection().connect()
-    
-    try:
-        # Create resources table
-        rds.execute("""
-            CREATE TABLE IF NOT EXISTS resources (
-                id SERIAL PRIMARY KEY,
-                resource_id VARCHAR(255) UNIQUE NOT NULL,
-                cloud_provider VARCHAR(50) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            response = self.client.get_cost_and_usage(
+                TimePeriod={
+                    "Start": start_date,
+                    "End": end_date
+                },
+                Granularity=granularity,
+                Metrics=metrics,
+                GroupBy=[
+                    {
+                        "Type": "DIMENSION",
+                        "Key": "SERVICE"
+                    }
+                ]
             )
-        """)
-        
-        # Create metrics table
-        rds.execute("""
-            CREATE TABLE IF NOT EXISTS metrics (
-                id SERIAL PRIMARY KEY,
-                resource_id VARCHAR(255) NOT NULL,
-                metric_name VARCHAR(255) NOT NULL,
-                metric_value FLOAT NOT NULL,
-                timestamp TIMESTAMP NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (resource_id) REFERENCES resources(resource_id)
-            )
-        """)
-        
-        rds.commit()
-        print("✅ RDS tables created successfully")
-        
-    except Exception as e:
-        print(f"❌ Error creating tables: {e}")
-        rds.rollback()
-        raise
-    finally:
-        rds.close()
-
-
-def import_json_to_rds(json_file: str):
-    """Import JSON data into AWS RDS"""
-    rds = RDSConnection().connect()
+            
+            logger.info(f"✅ Retrieved cost data from {start_date} to {end_date}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"❌ Error fetching cost data: {e}")
+            return {}
     
-    try:
-        # Read JSON file
-        with open(json_file, 'r') as f:
-            data = json.load(f)
+    def get_cost_by_resource(self, start_date: str, end_date: str,
+                            service: str = None) -> Dict[str, Any]:
+        """
+        Get cost breakdown by resource.
         
-        # Expect data structure: {"resources": [...], "metrics": [...]}
-        resources = data.get("resources", [])
-        metrics = data.get("metrics", [])
+        Args:
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
+            service: Filter by AWS service (optional)
+        
+        Returns:
+            Cost data grouped by resource ID or tag
+        """
+        try:
+            request = {
+                "TimePeriod": {
+                    "Start": start_date,
+                    "End": end_date
+                },
+                "Granularity": "DAILY",
+                "Metrics": ["UnblendedCost"],
+                "GroupBy": [
+                    {
+                        "Type": "TAG",
+                        "Key": "Name"  # Group by Name tag
+                    }
+                ]
+            }
+            
+            if service:
+                request["Filter"] = {
+                    "Dimensions": {
+                        "Key": "SERVICE",
+                        "Values": [service]
+                    }
+                }
+            
+            response = self.client.get_cost_and_usage(**request)
+            logger.info(f"✅ Retrieved cost data by resource")
+            return response
+            
+        except Exception as e:
+            logger.error(f"❌ Error fetching resource cost data: {e}")
+            return {}
+
+
+class EC2Manager:
+    """Manage EC2 instances for cost optimization"""
+    
+    def __init__(self, region: str = "us-east-1"):
+        self.client = boto3.client("ec2", region_name=region)
+    
+    def get_instances(self, filters: List[Dict] = None) -> List[Dict]:
+        """Get EC2 instances with optional filters"""
+        try:
+            params = {}
+            if filters:
+                params["Filters"] = filters
+            
+            response = self.client.describe_instances(**params)
+            instances = []
+            
+            for reservation in response.get("Reservations", []):
+                instances.extend(reservation.get("Instances", []))
+            
+            logger.info(f"✅ Retrieved {len(instances)} EC2 instances")
+            return instances
+            
+        except Exception as e:
+            logger.error(f"❌ Error getting EC2 instances: {e}")
+            return []
+    
+    def get_idle_instances(self, cpu_threshold: float = 5.0) -> List[str]:
+        """
+        Find idle EC2 instances based on CPU utilization.
+        (Requires CloudWatch metrics analysis)
+        """
+        logger.info("Note: Call CloudWatchCollector to analyze CPU metrics first")
+        return []
+    
+    def stop_instance(self, instance_id: str) -> bool:
+        """Stop a running EC2 instance"""
+        try:
+            self.client.stop_instances(InstanceIds=[instance_id])
+            logger.info(f"✅ Stopped instance {instance_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error stopping instance {instance_id}: {e}")
+            return False
+    
+    def terminate_instance(self, instance_id: str) -> bool:
+        """Terminate an EC2 instance"""
+        try:
+            self.client.terminate_instances(InstanceIds=[instance_id])
+            logger.info(f"✅ Terminated instance {instance_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error terminating instance {instance_id}: {e}")
+            return False
+
+
+class S3Manager:
+    """Manage S3 buckets for data storage"""
+    
+    def __init__(self):
+        self.client = boto3.client("s3")
+    
+    def upload_file(self, file_path: str, bucket: str, key: str) -> bool:
+        """Upload file to S3"""
+        try:
+            self.client.upload_file(file_path, bucket, key)
+            logger.info(f"✅ Uploaded {file_path} to s3://{bucket}/{key}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error uploading to S3: {e}")
+            return False
+    
+    def download_file(self, bucket: str, key: str, file_path: str) -> bool:
+        """Download file from S3"""
+        try:
+            self.client.download_file(bucket, key, file_path)
+            logger.info(f"✅ Downloaded s3://{bucket}/{key} to {file_path}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error downloading from S3: {e}")
+            return False
         
         # Insert resources
         for resource in resources:

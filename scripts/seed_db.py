@@ -1,7 +1,6 @@
 """
-seed_db.py
-Utility script to insert sample resources and metrics into metrics.db (SQLite)
-and/or AWS RDS with support for both local and cloud environments
+scripts/seed_db.py
+Initialize SQLite database with schema and sample data for testing.
 """
 
 import sqlite3
@@ -9,26 +8,29 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import LOCAL_DB_CONFIG, USE_AWS, SYNC_MODE
-from aws_utils import RDSConnection, create_rds_tables, sync_sqlite_to_rds
+from config import LOCAL_DB_CONFIG
 
 DB_FILE = LOCAL_DB_CONFIG["file"]
 
-def seed_local_sqlite():
-    """Seed data into local SQLite database"""
+
+def create_tables():
+    """Create required tables in SQLite database"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
 
-    # Create tables if they don't exist
+    # Resources table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS resources (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             resource_id TEXT UNIQUE NOT NULL,
+            resource_type TEXT NOT NULL,
             cloud_provider TEXT NOT NULL,
+            region TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
+    # Metrics table - stores all metrics from CloudWatch
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS metrics (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,68 +38,143 @@ def seed_local_sqlite():
             metric_name TEXT NOT NULL,
             metric_value REAL NOT NULL,
             timestamp TEXT NOT NULL,
+            unit TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (resource_id) REFERENCES resources(resource_id)
         )
     """)
 
-    # Insert sample resources
+    # Billing table - stores cost data from Cost Explorer
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS billing (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            resource_id TEXT,
+            service TEXT NOT NULL,
+            cost REAL NOT NULL,
+            currency TEXT DEFAULT 'USD',
+            date TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+    print(f"✅ Created tables in {DB_FILE}")
+
+
+def insert_sample_resources():
+    """Insert sample resources for testing"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
     sample_resources = [
-        ("res-001", "AWS"),
-        ("res-002", "Azure"),
-        ("res-003", "GCP"),
+        ("i-0123456789abcdef0", "EC2", "AWS", "us-east-1"),
+        ("i-0abcdef0123456789", "EC2", "AWS", "us-east-1"),
+        ("rds-db-prod-01", "RDS", "AWS", "us-east-1"),
+        ("lambda-func-01", "Lambda", "AWS", "us-east-1"),
     ]
 
-    for resource_id, provider in sample_resources:
+    for resource_id, resource_type, provider, region in sample_resources:
         try:
             cursor.execute(
-                "INSERT INTO resources (resource_id, cloud_provider) VALUES (?, ?)",
-                (resource_id, provider)
+                """INSERT INTO resources (resource_id, resource_type, cloud_provider, region) 
+                   VALUES (?, ?, ?, ?)""",
+                (resource_id, resource_type, provider, region)
             )
         except sqlite3.IntegrityError:
             print(f"⚠️  Resource {resource_id} already exists, skipping")
 
-    # Insert sample metrics
+    conn.commit()
+    conn.close()
+    print(f"✅ Inserted sample resources into {DB_FILE}")
+
+
+def insert_sample_metrics():
+    """Insert sample metrics for testing"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
     sample_metrics = [
-        ("res-001", "cpu_usage", 55.0, "2026-03-28T02:15:00"),
-        ("res-002", "memory_usage", 70.2, "2026-03-28T02:16:00"),
-        ("res-003", "disk_io", 120.5, "2026-03-28T02:17:00"),
+        ("i-0123456789abcdef0", "cpu_utilization", 45.5, "2026-03-28T10:00:00Z", "%"),
+        ("i-0123456789abcdef0", "cpu_utilization", 48.2, "2026-03-28T10:05:00Z", "%"),
+        ("i-0abcdef0123456789", "cpu_utilization", 5.2, "2026-03-28T10:00:00Z", "%"),
+        ("i-0abcdef0123456789", "memory_utilization", 72.1, "2026-03-28T10:00:00Z", "%"),
+        ("rds-db-prod-01", "cpu_utilization", 38.5, "2026-03-28T10:00:00Z", "%"),
+        ("rds-db-prod-01", "database_connections", 125, "2026-03-28T10:00:00Z", "Count"),
+        ("lambda-func-01", "invocations", 1250, "2026-03-28T10:00:00Z", "Count"),
+        ("lambda-func-01", "errors", 3, "2026-03-28T10:00:00Z", "Count"),
     ]
 
-    for resource_id, metric_name, value, timestamp in sample_metrics:
+    for resource_id, metric_name, value, timestamp, unit in sample_metrics:
         cursor.execute(
-            """INSERT INTO metrics (resource_id, metric_name, metric_value, timestamp)
-               VALUES (?, ?, ?, ?)""",
-            (resource_id, metric_name, value, timestamp)
+            """INSERT INTO metrics (resource_id, metric_name, metric_value, timestamp, unit)
+               VALUES (?, ?, ?, ?, ?)""",
+            (resource_id, metric_name, value, timestamp, unit)
         )
 
     conn.commit()
     conn.close()
-    print(f"✅ Seeded sample data into {DB_FILE}")
-    return conn
+    print(f"✅ Inserted sample metrics into {DB_FILE}")
 
 
-def seed_aws_rds():
-    """Seed data into AWS RDS"""
-    try:
-        # Create tables in RDS
-        create_rds_tables()
-        
-        # Seed sample data
-        rds = RDSConnection().connect()
-        
-        sample_resources = [
-            ("res-001", "AWS"),
-            ("res-002", "Azure"),
-            ("res-003", "GCP"),
-        ]
+def insert_sample_billing():
+    """Insert sample billing data for testing"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
 
-        for resource_id, provider in sample_resources:
-            try:
-                rds.execute(
-                    "INSERT INTO resources (resource_id, cloud_provider) VALUES (%s, %s)",
-                    (resource_id, provider)
-                )
+    sample_billing = [
+        ("i-0123456789abcdef0", "EC2 - On Demand", 15.45, "USD", "2026-03-28"),
+        ("i-0abcdef0123456789", "EC2 - On Demand", 2.30, "USD", "2026-03-28"),
+        ("rds-db-prod-01", "RDS - PostgreSQL", 45.50, "USD", "2026-03-28"),
+        ("lambda-func-01", "Lambda", 8.25, "USD", "2026-03-28"),
+    ]
+
+    for resource_id, service, cost, currency, date in sample_billing:
+        cursor.execute(
+            """INSERT INTO billing (resource_id, service, cost, currency, date)
+               VALUES (?, ?, ?, ?, ?)""",
+            (resource_id, service, cost, currency, date)
+        )
+
+    conn.commit()
+    conn.close()
+    print(f"✅ Inserted sample billing data into {DB_FILE}")
+
+
+def reset_database():
+    """Drop all tables (destructive!)"""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    cursor.execute("DROP TABLE IF EXISTS metrics")
+    cursor.execute("DROP TABLE IF EXISTS billing")
+    cursor.execute("DROP TABLE IF EXISTS resources")
+
+    conn.commit()
+    conn.close()
+    print(f"✅ Reset database {DB_FILE}")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Seed SQLite database for metrics pipeline")
+    parser.add_argument("--reset", action="store_true", help="Reset database (destructive)")
+    parser.add_argument("--create-only", action="store_true", help="Only create schema, skip sample data")
+
+    args = parser.parse_args()
+
+    if args.reset:
+        reset_database()
+
+    create_tables()
+
+    if not args.create_only:
+        insert_sample_resources()
+        insert_sample_metrics()
+        insert_sample_billing()
+
+    print("✅ Database initialization complete!")
             except Exception as e:
                 print(f"⚠️  Resource {resource_id} may already exist: {e}")
 

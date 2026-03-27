@@ -1,6 +1,6 @@
 """
 config.py
-Configuration file for AWS and local database connections
+Configuration for data pipeline: metrics collection, storage, and cleaning
 """
 
 import os
@@ -9,26 +9,52 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# AWS RDS Configuration
-AWS_RDS_CONFIG = {
-    "host": os.getenv("AWS_RDS_HOST", "localhost"),
-    "port": int(os.getenv("AWS_RDS_PORT", 5432)),
-    "database": os.getenv("AWS_RDS_DB_NAME", "cloud_costing"),
-    "user": os.getenv("AWS_RDS_USER", "admin"),
-    "password": os.getenv("AWS_RDS_PASSWORD", "password"),
-    "engine": os.getenv("AWS_RDS_ENGINE", "postgres"),  # mysql, postgres, mariadb
-}
+# ============================================================================
+# LOCAL STORAGE (SQLite) - PRIMARY DATA STORE FOR PIPELINE
+# ============================================================================
 
-# Local SQLite Configuration
 LOCAL_DB_CONFIG = {
     "type": "sqlite",
     "file": os.getenv("LOCAL_DB_FILE", "metrics.db"),
 }
 
-# Environment flag
-USE_AWS = os.getenv("USE_AWS", "False").lower() == "true"
-SYNC_MODE = os.getenv("SYNC_MODE", "both")  # "local", "aws", "both"
+# ============================================================================
+# AWS CONFIGURATION - FOR DATA COLLECTION VIA CloudWatch/Cost Explorer
+# ============================================================================
 
-# AWS Credentials (optional, uses default AWS profile if not set)
+# AWS Region for CloudWatch/Monitoring API calls
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-AWS_PROFILE = os.getenv("AWS_PROFILE", "default")
+AWS_PROFILE = os.getenv("AWS_PROFILE", "default")  # AWS credentials profile
+
+# CloudWatch Configuration
+CLOUDWATCH_NAMESPACE = os.getenv("CLOUDWATCH_NAMESPACE", "AWS/EC2")
+CLOUDWATCH_PERIOD = int(os.getenv("CLOUDWATCH_PERIOD", 300))  # 5 minutes
+
+# GCP Configuration (if using GCP)
+GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", None)
+GCP_CREDENTIALS_PATH = os.getenv("GCP_CREDENTIALS_PATH", None)
+
+# ============================================================================
+# DATA PIPELINE SETTINGS
+# ============================================================================
+
+# Resource IDs to monitor (EC2 instances, RDS DBs, GCP resources)
+MONITORED_RESOURCES = os.getenv("MONITORED_RESOURCES", "res-001,res-002,res-003").split(",")
+
+# Data collection interval (minutes)
+COLLECTION_INTERVAL = int(os.getenv("COLLECTION_INTERVAL", 5))
+
+# Data retention (days)
+DATA_RETENTION_DAYS = int(os.getenv("DATA_RETENTION_DAYS", 90))
+
+# ============================================================================
+# PANDAS/ML PIPELINE SETTINGS
+# ============================================================================
+
+# Output directory for cleaned data/CSV exports
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
+ML_READY_CSV = os.getenv("ML_READY_CSV", "ml_ready_data.csv")
+
+# Logging
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_FILE = os.getenv("LOG_FILE", "pipeline.log")
