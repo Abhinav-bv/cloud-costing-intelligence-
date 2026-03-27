@@ -1,20 +1,17 @@
 """
-cloudwatch_collector.py
-Fetches metrics from AWS CloudWatch and inserts them into the local DB.
+src/cloudwatch_collector.py
+Collectors for AWS CloudWatch metrics (EC2, RDS).
 """
 
 import boto3
-from datetime import datetime, timedelta
-from src.collect_metrics import insert_metric  # reuse your existing DB insert logic
-from config import AWS_REGION
+from datetime import datetime, timedelta, timezone
+from src.collect_metrics import insert_metric
 
-def fetch_ec2_cpu(instance_id, region=AWS_REGION):
-    """
-    Fetch average CPU utilization for an EC2 instance over the last 5 minutes.
-    """
-    client = boto3.client("cloudwatch", region_name=region)
+def fetch_ec2_cpu(instance_id: str):
+    """Fetch EC2 CPU utilization and insert into DB."""
+    client = boto3.client("cloudwatch", region_name="us-east-1")
 
-    end = datetime.utcnow()
+    end = datetime.now(timezone.utc)
     start = end - timedelta(minutes=5)
 
     response = client.get_metric_statistics(
@@ -27,39 +24,40 @@ def fetch_ec2_cpu(instance_id, region=AWS_REGION):
         Statistics=["Average"]
     )
 
-    for datapoint in response["Datapoints"]:
+    datapoints = response.get("Datapoints", [])
+    for dp in datapoints:
         insert_metric(
             resource_id=instance_id,
             metric_name="cpu_usage",
-            metric_value=datapoint["Average"],
-            timestamp=datapoint["Timestamp"].isoformat()
+            metric_value=dp["Average"],
+            timestamp=dp["Timestamp"]
         )
     print(f"Inserted CPU metrics for {instance_id}")
 
-def fetch_rds_cpu(db_instance_id, region=AWS_REGION):
-    """
-    Fetch average CPU utilization for an RDS instance over the last 5 minutes.
-    """
-    client = boto3.client("cloudwatch", region_name=region)
 
-    end = datetime.utcnow()
+def fetch_rds_cpu(db_identifier: str):
+    """Fetch RDS CPU utilization and insert into DB."""
+    client = boto3.client("cloudwatch", region_name="us-east-1")
+
+    end = datetime.now(timezone.utc)
     start = end - timedelta(minutes=5)
 
     response = client.get_metric_statistics(
         Namespace="AWS/RDS",
         MetricName="CPUUtilization",
-        Dimensions=[{"Name": "DBInstanceIdentifier", "Value": db_instance_id}],
+        Dimensions=[{"Name": "DBInstanceIdentifier", "Value": db_identifier}],
         StartTime=start,
         EndTime=end,
         Period=300,
         Statistics=["Average"]
     )
 
-    for datapoint in response["Datapoints"]:
+    datapoints = response.get("Datapoints", [])
+    for dp in datapoints:
         insert_metric(
-            resource_id=db_instance_id,
-            metric_name="rds_cpu_usage",
-            metric_value=datapoint["Average"],
-            timestamp=datapoint["Timestamp"].isoformat()
+            resource_id=db_identifier,
+            metric_name="cpu_usage",
+            metric_value=dp["Average"],
+            timestamp=dp["Timestamp"]
         )
-    print(f"Inserted RDS CPU metrics for {db_instance_id}")
+    print(f"Inserted RDS CPU metrics for {db_identifier}")

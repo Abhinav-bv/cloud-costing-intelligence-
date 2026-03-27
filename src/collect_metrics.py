@@ -7,7 +7,8 @@ import pandas as pd
 import sqlite3
 from datetime import datetime
 from config import LOCAL_DB_CONFIG, USE_AWS, SYNC_MODE
-from aws_utils import RDSConnection
+from src.aws_utils import RDSConnection
+
 
 # Database connections
 sqlite_conn = None
