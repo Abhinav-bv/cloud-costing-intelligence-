@@ -31,6 +31,7 @@ from config import (
 from src.cloudwatch_collector import CloudWatchCollector
 from src.billing_collector import BillingDataPipeline
 from src.data_cleaner import DataCleaner
+from src.anomaly_detection.model import AnomalyDetector
 
 # ============================================================================
 # LOGGING SETUP
@@ -157,6 +158,23 @@ def clean_and_prepare_data():
     if os.path.exists(output_csv):
         shutil.copy2(output_csv, root_csv)
         logger.info(f"Synced ML dataset to repo root: {root_csv}")
+
+    # Generate anomaly inference output for downstream consumers.
+    output_anomalies = os.path.join(OUTPUT_DIR, "anomalies.json")
+    root_anomalies = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "anomalies.json",
+    )
+    if os.path.exists(output_csv):
+        detector = AnomalyDetector()
+        anomalies = detector.detect_from_csv(output_csv, output_anomalies)
+        shutil.copy2(output_anomalies, root_anomalies)
+        anomaly_count = sum(1 for row in anomalies if row.get("anomaly"))
+        logger.info(
+            f"Generated anomaly output: {output_anomalies} "
+            f"({anomaly_count}/{len(anomalies)} rows flagged)"
+        )
+        logger.info(f"Synced anomaly output to repo root: {root_anomalies}")
 
     # Ensure intervention history file exists for backend/dashboard integration.
     root_history_csv = os.path.join(
