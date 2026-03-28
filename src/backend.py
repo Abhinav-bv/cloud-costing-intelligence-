@@ -4,6 +4,8 @@ import random
 import time
 from datetime import datetime
 import asyncio
+import pandas as pd
+from anomaly_detection.model import AnomalyDetector
 
 app = FastAPI(title="Cyberpunk FinOps Core API")
 
@@ -93,22 +95,66 @@ async def trigger_chaos():
     return {"msg": "Chaos initiated"}
 
 async def chaos_sequence(target_node: int):
-    """The choreographed simulation, entirely migrated to the Python Server!"""
-    # T=0s
+    """The choreographed simulation, dynamically routed through the new Machine Learning Model!"""
     state.status = "ANOMALY"
     state.chart_data.pop(0)
     state.chart_data.append({"time": datetime.now().strftime("%H:%M:%S"), "actualCost": 85.0, "projectedCost": 85.0})
+    await asyncio.sleep(2.0)
     
-    # T=3s
-    await asyncio.sleep(3.0)
+    # 1. Randomly pick a chaos attack vector
+    attack_type = random.choice(["CPU_SPIKE", "ZOMBIE_MEMORY_LEAK", "DATA_EXFILTRATION_SPIKE"])
+    
+    # 2. Build healthy baseline history for the ML Model (14 hours)
+    history = []
+    for h in range(1, 15):
+        history.append({
+            "resource_id": f"node-{target_node}",
+            "hour": str(h),
+            "cpuutilization": random.uniform(10.0, 20.0),
+            "memoryutilization": random.uniform(30.0, 45.0),
+            "network_out_bytes": random.uniform(1000, 5000)
+        })
+        
+    # 3. Inject the anomalous telemetry vector
+    anomaly_point = {
+        "resource_id": f"node-{target_node}",
+        "hour": "15",
+        "cpuutilization": 15.0,
+        "memoryutilization": 40.0,
+        "network_out_bytes": 2500
+    }
+    
+    if attack_type == "CPU_SPIKE":
+        anomaly_point["cpuutilization"] = 99.8
+        action = "Autonomously Stopped Instance (Overload)"
+    elif attack_type == "ZOMBIE_MEMORY_LEAK":
+        anomaly_point["memoryutilization"] = 98.7
+        anomaly_point["cpuutilization"] = 0.5  # Critical indicator of an idle zombie node leaking ram
+        action = "Terminated Idle/Leaking Zombie Resource"
+    else:
+        anomaly_point["network_out_bytes"] = 85000000.0  # Massive network spike
+        action = "Isolated Network Interface Constraint"
+        
+    history.append(anomaly_point)
+    df = pd.DataFrame(history)
+    
+    # 4. SEND THROUGH THE AI: Core Isolation Forest Z-Score Evaluation
+    detector = AnomalyDetector()
+    results = detector.detect_from_dataframe(df, threshold=3.0)
+    
+    ml_reason = "Unidentified Anomaly Detected by Security"
+    for r in results:
+        if r["hour"] == "15" and r["anomaly"]:
+            ml_reason = r["reason"] # Example AI generation: "memoryutilization deviated from normal baseline (score=5.41)"
+            break
+            
+    # 5. UI Recovery Sequence Animation
     state.status = "REMEDIATING"
     state.chart_data.pop(0)
     state.chart_data.append({"time": datetime.now().strftime("%H:%M:%S"), "actualCost": 80.0, "projectedCost": 88.0})
-    
-    # T=5s
     await asyncio.sleep(2.0)
-    state.status = "HEALTHY"
     
+    state.status = "HEALTHY"
     new_active = 8 - len(state.offline_nodes) - 1
     drop_cost = 0 if new_active == 0 else (new_active * 1.2)
     
@@ -116,15 +162,17 @@ async def chaos_sequence(target_node: int):
     state.chart_data.append({"time": datetime.now().strftime("%H:%M:%S"), "actualCost": round(drop_cost, 2), "projectedCost": 90.0})
     
     state.offline_nodes.append(target_node)
+    
+    # Output Official AI Result to React
     act_log = {
         "id": int(time.time() * 1000),
         "timestamp": datetime.now().strftime("%I:%M:%S %p"),
         "resourceId": f"i-core-node-{target_node}",
-        "reason": "CPU > 95% (Cost Spike)",
-        "action": "Autonomously Stopped Instance"
+        "reason": f"AI LOG: {ml_reason}",
+        "action": action
     }
     state.logs.insert(0, act_log)
-    state.savings += 75.50
+    state.savings += round(random.uniform(50.0, 150.0), 2)
     state.active_anomaly_node = None
     state.is_simulating = False
 
