@@ -25,7 +25,7 @@ const KPICards = ({ status, savings, chartData }) => {
       <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-6 shadow-xl flex flex-col justify-between hover:bg-slate-900/80 transition-all">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-slate-400 font-mono text-sm uppercase tracking-wider">Current Run Rate</h3>
-          <Activity className="text-emerald-500 w-5 h-5 opacity-70" />
+          <Activity className="text-rose-600 w-5 h-5 opacity-70" />
         </div>
         <div>
           <span className="text-4xl font-black text-slate-100">${currentRunRate.toFixed(2)}</span>
@@ -52,10 +52,10 @@ const KPICards = ({ status, savings, chartData }) => {
       <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-6 shadow-xl flex flex-col justify-between hover:bg-slate-900/80 transition-all">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-slate-400 font-mono text-sm uppercase tracking-wider">Total Savings</h3>
-          <DollarSign className="text-emerald-500 w-5 h-5 opacity-70" />
+          <DollarSign className="text-rose-600 w-5 h-5 opacity-70" />
         </div>
         <div>
-          <span className="text-4xl font-black text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">
+          <span className="text-4xl font-black text-rose-600 drop-shadow-[0_0_8px_rgba(225,29,72,0.4)]">
             ${savings.toFixed(2)}
           </span>
           <span className="text-slate-500 ml-2 font-mono text-sm">YTD</span>

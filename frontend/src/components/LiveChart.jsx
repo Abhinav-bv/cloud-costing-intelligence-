@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
 const LiveChart = ({ data }) => {
   return (
@@ -11,11 +11,11 @@ const LiveChart = ({ data }) => {
         </div>
         <div className="flex items-center gap-4 text-xs font-mono">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-emerald-500 rounded-sm shadow-[0_0_5px_#10b981]"></div>
+            <div className="w-3 h-3 bg-rose-600 rounded-sm shadow-[0_0_5px_#e11d48]"></div>
             <span className="text-slate-300">Actual Cost</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-0.5 bg-red-500 border-t border-dashed border-red-500"></div>
+            <div className="w-3 h-0.5 bg-cyan-400 border-t border-dashed border-cyan-400"></div>
             <span className="text-slate-300">Projected (Without AI)</span>
           </div>
         </div>
@@ -26,8 +26,8 @@ const LiveChart = ({ data }) => {
           <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#e11d48" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="#e11d48" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
@@ -42,7 +42,7 @@ const LiveChart = ({ data }) => {
               type="monotone" 
               dataKey="actualCost" 
               name="Actual Cost ($)"
-              stroke="#10b981" 
+              stroke="#e11d48" 
               strokeWidth={3}
               fillOpacity={1} 
               fill="url(#colorActual)" 
@@ -54,7 +54,7 @@ const LiveChart = ({ data }) => {
               type="monotone" 
               dataKey="projectedCost" 
               name="Projected Cost ($)"
-              stroke="#ef4444" 
+              stroke="#22d3ee" 
               strokeWidth={2}
               strokeDasharray="5 5"
               dot={false}

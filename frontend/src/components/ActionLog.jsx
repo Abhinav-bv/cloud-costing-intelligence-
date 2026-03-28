@@ -6,7 +6,7 @@ const ActionLog = ({ logs }) => {
     <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl shadow-xl overflow-hidden w-full">
       <div className="p-5 border-b border-slate-800 flex justify-between items-center">
         <h3 className="text-slate-200 font-bold text-sm tracking-wide flex items-center gap-2 uppercase">
-          <Activity className="w-4 h-4 text-emerald-500" />
+          <Activity className="w-4 h-4 text-rose-600" />
           Intervention History
         </h3>
         <span className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded bg-slate-900">
@@ -33,14 +33,14 @@ const ActionLog = ({ logs }) => {
                 <td className="px-6 py-4 text-slate-300">{log.resourceId}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center px-2 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wider border ${
-                    log.reason.includes('Idle') || log.reason.includes('Overprovisioned') 
+                    log.reason.includes('Idle') || log.reason.includes('Overprovisioned') || log.reason.includes('Rebalanced')
                       ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
                       : 'bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
                   }`}>
                     {log.reason}
                   </span>
                 </td>
-                <td className="px-6 py-4 font-bold text-emerald-500">
+                <td className="px-6 py-4 font-bold text-rose-600">
                   {log.action}
                 </td>
               </tr>
