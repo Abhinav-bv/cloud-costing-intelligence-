@@ -266,6 +266,13 @@ class DataCleaner:
         # Pivot to columns
         ml_ready_df = self.pivot_metrics(hourly_metrics)
         
+        # Filter to only monitored resources
+        from config import MONITORED_RESOURCES
+        if MONITORED_RESOURCES:
+            logger.info(f"Filtering to monitored resources: {MONITORED_RESOURCES}")
+            ml_ready_df = ml_ready_df[ml_ready_df['resource_id'].isin(MONITORED_RESOURCES)]
+            logger.info(f"  - After filtering: {len(ml_ready_df)} rows")
+        
         # Fill remaining NaN with forward fill then backward fill
         ml_ready_df = ml_ready_df.ffill().bfill()
         
