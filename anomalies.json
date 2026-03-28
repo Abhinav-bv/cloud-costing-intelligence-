@@ -211,8 +211,8 @@
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 17:10:00+00:00",
     "anomaly": false,
-    "confidence": 0.49,
-    "reason": "networktraffic deviated from normal baseline (score=2.99)",
+    "confidence": 0.4045,
+    "reason": "networktraffic deviated from normal baseline (score=2.43)",
     "model_name": "robust_zscore_v1"
   }
 ]
