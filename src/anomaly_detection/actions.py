@@ -1,39 +1,26 @@
 import boto3
-from botocore.exceptions import ClientError
+from cost_tracker import log_intervention
 
-def terminate_or_stop_resource(instance_id, action="STOP"):
-    """
-    Connects to AWS and executes a cost-saving action.
-    action: "STOP" (pauses billing) or "TERMINATE" (deletes the server)
-    """
-    # 1. Initialize the EC2 'Resource' (Higher level than 'client')
-    ec2 = boto3.resource('ec2', region_name='us-east-1') # Use your region
-    instance = ec2.Instance(instance_id)
-
+def execute_cost_optimization(resource_id, anomaly_score, dry_run=True):
+    """Stops an instance if it is identified as a waste of money."""
+    # Note: For Lambda ARNs, we might log it; for i-xxxx IDs, we stop them.
+    is_ec2 = resource_id.startswith('i-')
+    
     try:
-        if action == "STOP":
-            print(f"--- 🚨 Initiating STOP for {instance_id} ---")
-            instance.stop()
-            print(f"✅ Status: Stop command sent successfully.")
-        
-        elif action == "TERMINATE":
-            print(f"--- ⚠️ Initiating TERMINATION for {instance_id} ---")
-            instance.terminate()
-            print(f"✅ Status: Termination command sent.")
+        if is_ec2:
+            ec2 = boto3.client('ec2', region_name='us-east-1')
+            print(f"🤖 AI ACTION: Stopping Zombie EC2 {resource_id} (Score: {anomaly_score})")
+            ec2.stop_instances(InstanceIds=[resource_id], DryRun=dry_run)
+        else:
+            print(f"🤖 AI ADVISORY: Flagging non-EC2 resource {resource_id} for review.")
 
-    except ClientError as e:
-        # This catches errors like "Instance not found" or "No Permissions"
-        print(f"❌ AWS Error: {e.response['Error']['Message']}")
-
-# --- Testing the Real Action ---
-if __name__ == "__main__":
-    # Replace this with your ACTUAL instance ID from the AWS Console
-    MY_INSTANCE_ID = "i-0123456789abcdef" 
-    terminate_or_stop_resource(MY_INSTANCE_ID, action="STOP")
-
-# Inside execute_cost_optimization
-if not dry_run:
-    # Logic to calculate hours left in the month
-    hours_saved = 720 # assuming it stayed off for a month
-    money_saved = hours_saved * 0.0116
-    return money_saved    
+        # Always log to our internal database for the React Dashboard
+        log_intervention(resource_id, "ISOLATE/STOP", anomaly_score)
+        return True
+    except Exception as e:
+        # If it's a dry run, Boto3 throws an error - we treat that as success for the demo
+        if 'DryRunOperation' in str(e):
+            log_intervention(resource_id, "DRY_RUN_STOP", anomaly_score)
+            return True
+        print(f"❌ Error performing action: {e}")
+        return False
