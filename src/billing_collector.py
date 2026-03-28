@@ -4,8 +4,11 @@ Collect AWS cost and usage data from Cost Explorer API.
 """
 
 import logging
+import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
+
+import boto3
 
 from src.aws_utils import CostExplorerCollector
 from src.collect_metrics import insert_metric
@@ -18,6 +21,106 @@ class BillingDataPipeline:
     
     def __init__(self):
         self.collector = CostExplorerCollector()
+
+    def collect_optimization_report_from_s3(self, bucket: str, key: str) -> Dict[str, Any]:
+        """
+        Load optimization cost report JSON from S3 and store summary metrics.
+
+        Expected report to include before/after/savings fields either top-level
+        or under a nested "savings" object.
+        """
+        try:
+            s3 = boto3.client("s3")
+            obj = s3.get_object(Bucket=bucket, Key=key)
+            raw = obj["Body"].read().decode("utf-8")
+            report = json.loads(raw)
+
+            normalized = self._normalize_optimization_report(report)
+            timestamp = datetime.utcnow().isoformat()
+
+            # Store summary metrics for downstream analysis/dashboard joins.
+            for metric_name, value in normalized.items():
+                insert_metric(
+                    resource_id="cost_optimization_report",
+                    metric_name=metric_name,
+                    metric_value=float(value),
+                    timestamp=timestamp,
+                )
+
+            logger.info(f"Loaded optimization cost report from s3://{bucket}/{key}")
+            return {"raw": report, "normalized": normalized}
+
+        except Exception as e:
+            logger.warning(f"Could not load optimization report from s3://{bucket}/{key}: {e}")
+            return {}
+
+    def save_optimization_report_json(self, report: Dict[str, Any], output_path: str) -> bool:
+        """Save fetched optimization report to local JSON for dashboard teammate."""
+        try:
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(report, f, indent=2)
+            logger.info(f"Saved optimization report to {output_path}")
+            return True
+        except Exception as e:
+            logger.warning(f"Failed to save optimization report JSON: {e}")
+            return False
+
+    def _normalize_optimization_report(self, report: Dict[str, Any]) -> Dict[str, float]:
+        """Extract numeric before/after/savings values from flexible JSON layouts."""
+
+        def extract_number(value: Any, default: float = 0.0) -> float:
+            if isinstance(value, (int, float)):
+                return float(value)
+            if isinstance(value, str):
+                cleaned = value.replace("$", "").replace("%", "").replace(",", "").strip()
+                try:
+                    return float(cleaned)
+                except ValueError:
+                    return default
+            return default
+
+        savings = report.get("savings", {}) if isinstance(report.get("savings"), dict) else {}
+
+        before = extract_number(
+            report.get("before_optimization")
+            or report.get("before")
+            or report.get("before_monthly")
+            or savings.get("before")
+            or savings.get("before_optimization")
+        )
+        after = extract_number(
+            report.get("after_optimization")
+            or report.get("after")
+            or report.get("after_monthly")
+            or savings.get("after")
+            or savings.get("after_optimization")
+        )
+        monthly = extract_number(
+            report.get("monthly_savings")
+            or report.get("savings_monthly")
+            or savings.get("monthly")
+            or savings.get("monthly_savings")
+        )
+        annual = extract_number(
+            report.get("annual_savings")
+            or report.get("savings_annual")
+            or savings.get("annual")
+            or savings.get("annual_savings")
+        )
+        reduction_pct = extract_number(
+            report.get("cost_reduction")
+            or report.get("cost_reduction_percent")
+            or savings.get("reduction_percent")
+            or savings.get("cost_reduction_percent")
+        )
+
+        return {
+            "aws_cost_before": before,
+            "aws_cost_after": after,
+            "aws_cost_savings_monthly": monthly,
+            "aws_cost_savings_annual": annual,
+            "aws_cost_reduction_percent": reduction_pct,
+        }
     
     def collect_daily_costs(self, days_back: int = 7) -> List[Dict[str, Any]]:
         """

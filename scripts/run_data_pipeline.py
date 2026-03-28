@@ -18,7 +18,14 @@ from datetime import datetime
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import MONITORED_RESOURCES, LOG_LEVEL, LOG_FILE, OUTPUT_DIR
+from config import (
+    MONITORED_RESOURCES,
+    LOG_LEVEL,
+    LOG_FILE,
+    OUTPUT_DIR,
+    COST_REPORT_BUCKET,
+    COST_REPORT_KEY,
+)
 from src.cloudwatch_collector import CloudWatchCollector
 from src.billing_collector import BillingDataPipeline
 from src.data_cleaner import DataCleaner
@@ -103,6 +110,23 @@ def collect_billing_data():
         logger.info(f"\nTop resources by cost:")
         for resource, cost in sorted(resource_costs.items(), key=lambda x: x[1], reverse=True)[:10]:
             logger.info(f"  • {resource}: ${cost:.2f}")
+
+    # Pull before/after optimization report from S3 and persist for dashboard.
+    optimization = pipeline.collect_optimization_report_from_s3(
+        bucket=COST_REPORT_BUCKET,
+        key=COST_REPORT_KEY,
+    )
+    if optimization:
+        summary = optimization.get("normalized", {})
+        logger.info("\nOptimization report summary:")
+        logger.info(f"  - Before optimization: ${summary.get('aws_cost_before', 0.0):.3f}/month")
+        logger.info(f"  - After optimization:  ${summary.get('aws_cost_after', 0.0):.3f}/month")
+        logger.info(f"  - Monthly savings:     ${summary.get('aws_cost_savings_monthly', 0.0):.3f}")
+        logger.info(f"  - Annual savings:      ${summary.get('aws_cost_savings_annual', 0.0):.3f}")
+        logger.info(f"  - Cost reduction:      {summary.get('aws_cost_reduction_percent', 0.0):.2f}%")
+
+        report_path = os.path.join(OUTPUT_DIR, "cost_report.json")
+        pipeline.save_optimization_report_json(optimization.get("raw", {}), report_path)
     
     logger.info("\nBilling collection complete!\n")
 
