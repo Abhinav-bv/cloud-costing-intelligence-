@@ -10,9 +10,11 @@ Usage:
 """
 
 import argparse
+import csv
 import logging
 import sys
 import os
+import shutil
 from datetime import datetime
 
 # Add project root to path
@@ -148,6 +150,31 @@ def clean_and_prepare_data():
     
     cleaner = DataCleaner()
     ml_ready_df = cleaner.prepare_ml_dataset()
+
+    # Mirror the ML dataset to repo root for teammates/services expecting this path.
+    output_csv = os.path.join(OUTPUT_DIR, "ml_ready_data.csv")
+    root_csv = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ml_ready_data.csv")
+    if os.path.exists(output_csv):
+        shutil.copy2(output_csv, root_csv)
+        logger.info(f"Synced ML dataset to repo root: {root_csv}")
+
+    # Ensure intervention history file exists for backend/dashboard integration.
+    root_history_csv = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "intervention_history.csv",
+    )
+    if not os.path.exists(root_history_csv):
+        with open(root_history_csv, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "timestamp",
+                "resource_id",
+                "anomaly_type",
+                "action",
+                "status",
+                "details",
+            ])
+        logger.info(f"Created integration file: {root_history_csv}")
     
     if not ml_ready_df.empty:
         logger.info("\n" + cleaner.generate_summary(ml_ready_df))
