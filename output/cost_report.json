@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-03-28 13:52:55.927301",
+  "currency": "USD",
+  "period": "Monthly",
+  "before": {
+    "scenario": "BEFORE Optimization",
+    "resources": {
+      "EC2 (idle 24/7)": {
+        "hours": 720,
+        "rate": "$0.0116/hour",
+        "cost": 8.352
+      },
+      "Lambda (runaway)": {
+        "invocations": 10000,
+        "rate": "$2e-07/invocation",
+        "cost": 0.002
+      },
+      "CloudWatch (3 metrics)": {
+        "metrics": 3,
+        "rate": "$0.3/metric/month",
+        "cost": 0.9
+      }
+    },
+    "total_monthly_cost": 9.254
+  },
+  "after": {
+    "scenario": "AFTER Optimization",
+    "resources": {
+      "EC2 (stopped when idle)": {
+        "hours": 60,
+        "rate": "$0.0116/hour",
+        "cost": 0.696
+      },
+      "Lambda (controlled)": {
+        "invocations": 100,
+        "rate": "$2e-07/invocation",
+        "cost": 0.0
+      },
+      "CloudWatch (3 metrics)": {
+        "metrics": 3,
+        "rate": "$0.3/metric/month",
+        "cost": 0.9
+      }
+    },
+    "total_monthly_cost": 1.596
+  },
+  "savings": {
+    "monthly_savings": 7.658,
+    "annual_savings": 91.896,
+    "percentage_reduction": 82.75
+  }
+}

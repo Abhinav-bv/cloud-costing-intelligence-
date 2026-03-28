@@ -1,0 +1,36 @@
+{
+  "collected_at": "2026-03-27 21:01:31.130924",
+  "metrics": {
+    "IdleCPU": [
+      {
+        "timestamp": "2026-03-28 01:36:00+05:30",
+        "average": 2.0,
+        "maximum": 2.0
+      },
+      {
+        "timestamp": "2026-03-28 01:41:00+05:30",
+        "average": 2.0,
+        "maximum": 2.0
+      }
+    ],
+    "NetworkTraffic": [
+      {
+        "timestamp": "2026-03-28 01:51:00+05:30",
+        "average": 597.5,
+        "maximum": 950.0
+      }
+    ],
+    "LambdaInvocations": [
+      {
+        "timestamp": "2026-03-28 02:21:00+05:30",
+        "average": 3.625,
+        "maximum": 7.0
+      },
+      {
+        "timestamp": "2026-03-28 02:26:00+05:30",
+        "average": 5.333333333333333,
+        "maximum": 10.0
+      }
+    ]
+  }
+}
