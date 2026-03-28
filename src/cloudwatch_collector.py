@@ -29,18 +29,6 @@ class CloudWatchCollector:
                                 statistic: str = "Average") -> List[Dict[str, Any]]:
         """
         Fetch metric statistics from CloudWatch.
-        
-        Args:
-            namespace: AWS namespace (e.g., "AWS/EC2")
-            metric_name: Name of metric (e.g., "CPUUtilization")
-            dimensions: Dict of dimension names/values
-            start_time: Start time (default: 5 mins ago)
-            end_time: End time (default: now)
-            period: Period in seconds (default from config)
-            statistic: Statistic type (Average, Sum, Maximum, Minimum, Count)
-        
-        Returns:
-            List of datapoints
         """
         if end_time is None:
             end_time = datetime.now(timezone.utc)
@@ -69,24 +57,17 @@ class CloudWatchCollector:
     def collect_ec2_metrics(self, instance_id: str, 
                            metrics: List[str] = None) -> Dict[str, List]:
         """
-        Collect EC2 instance metrics (CPU, Network, etc).
-        
-        Args:
-            instance_id: EC2 instance ID
-            metrics: List of metric names (default: CPUUtilization, NetworkIn, NetworkOut)
-        
-        Returns:
-            Dict with metric name as key and datapoints list as value
+        Collect EC2 instance metrics from HackathonMetrics namespace.
         """
         if metrics is None:
-            metrics = ["CPUUtilization", "NetworkIn", "NetworkOut"]
+            metrics = ["IdleCPU", "NetworkTraffic"]  # ← updated to match your metrics
         
         results = {}
         for metric_name in metrics:
             datapoints = self.fetch_metric_statistics(
-                namespace="AWS/EC2",
-                metric_name=metric_name,
-                dimensions={"InstanceId": instance_id}
+                namespace="HackathonMetrics",  # ← your namespace
+                metric_name=metric_name,       # ← uses IdleCPU, NetworkTraffic
+                dimensions={}                  # ← no dimensions in your metrics
             )
             results[metric_name] = datapoints
             
@@ -99,30 +80,23 @@ class CloudWatchCollector:
                     timestamp=dp["Timestamp"].isoformat()
                 )
         
-        logger.info(f"Collected EC2 metrics for {instance_id}")
+        logger.info(f"✅ Collected EC2 metrics for {instance_id}")
         return results
     
     def collect_lambda_metrics(self, function_name: str,
                               metrics: List[str] = None) -> Dict[str, List]:
         """
-        Collect Lambda function metrics.
-        
-        Args:
-            function_name: Lambda function name
-            metrics: List of metric names (default: Invocations, Errors, Duration)
-        
-        Returns:
-            Dict with metric name as key and datapoints list as value
+        Collect Lambda function metrics from HackathonMetrics namespace.
         """
         if metrics is None:
-            metrics = ["Invocations", "Errors", "Duration", "Throttles"]
+            metrics = ["LambdaInvocations"]  # ← updated to match your metric
         
         results = {}
         for metric_name in metrics:
             datapoints = self.fetch_metric_statistics(
-                namespace="AWS/Lambda",
-                metric_name=metric_name,
-                dimensions={"FunctionName": function_name}
+                namespace="HackathonMetrics",   # ← your namespace not AWS/Lambda
+                metric_name="LambdaInvocations", # ← your custom metric name
+                dimensions={}                    # ← no dimensions in your metrics
             )
             results[metric_name] = datapoints
             
@@ -131,7 +105,7 @@ class CloudWatchCollector:
                 insert_metric(
                     resource_id=function_name,
                     metric_name=metric_name.lower(),
-                    metric_value=dp.get("Sum" if metric_name == "Invocations" else "Average", 0),
+                    metric_value=dp.get("Average", 0),
                     timestamp=dp["Timestamp"].isoformat()
                 )
         
@@ -143,4 +117,4 @@ class CloudWatchCollector:
 def fetch_ec2_cpu(instance_id: str):
     """Fetch EC2 CPU utilization and insert into DB."""
     collector = CloudWatchCollector()
-    collector.collect_ec2_metrics(instance_id, metrics=["CPUUtilization"])
+    collector.collect_ec2_metrics(instance_id, metrics=["IdleCPU"])

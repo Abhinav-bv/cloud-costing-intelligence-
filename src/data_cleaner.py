@@ -192,12 +192,12 @@ class DataCleaner:
         if df.empty:
             return df
         
-        logger.info("Aggregating metrics to hourly...")
+        logger.info("Aggregating metrics to 5-minute intervals...")
         
-        # Round timestamp to nearest hour
-        df['hour'] = df['timestamp'].dt.floor('h')
+        # Round timestamp to nearest 5 minutes
+        df['hour'] = df['timestamp'].dt.floor('5min')
         
-        # Group by resource, metric, and hour - calculate mean
+        # Group by resource, metric, and interval - calculate mean
         agg_df = df.groupby(['resource_id', 'metric_name', 'hour']).agg({
             'metric_value': ['mean', 'min', 'max', 'std']
         }).reset_index()
