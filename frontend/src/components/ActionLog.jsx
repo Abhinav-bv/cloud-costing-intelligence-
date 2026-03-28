@@ -3,20 +3,22 @@ import { Activity, Clock } from 'lucide-react';
 
 const ActionLog = ({ logs }) => {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden mb-8 w-full">
-      <div className="p-6 border-b border-slate-800">
-        <h3 className="text-slate-200 font-semibold text-lg flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-400" />
-          Autonomous Action Log
+    <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl shadow-xl overflow-hidden w-full">
+      <div className="p-5 border-b border-slate-800 flex justify-between items-center">
+        <h3 className="text-slate-200 font-bold text-sm tracking-wide flex items-center gap-2 uppercase">
+          <Activity className="w-4 h-4 text-emerald-500" />
+          Intervention History
         </h3>
-        <p className="text-slate-500 text-sm">Recent AI-driven resolutions and cost optimizations</p>
+        <span className="text-xs font-mono text-slate-500 border border-slate-700 px-2 py-1 rounded bg-slate-900">
+          Showing last {logs.length} actions
+        </span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm whitespace-nowrap">
-          <thead className="bg-slate-950/50 text-slate-400 border-b border-slate-800">
+          <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 font-mono text-xs uppercase">
             <tr>
               <th className="px-6 py-4 font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4" />
+                <Clock className="w-3 h-3" />
                 Timestamp
               </th>
               <th className="px-6 py-4 font-medium">Resource ID</th>
@@ -24,21 +26,21 @@ const ActionLog = ({ logs }) => {
               <th className="px-6 py-4 font-medium">Action Taken</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60">
+          <tbody className="divide-y divide-slate-800/50 font-mono text-xs">
             {logs.map((log) => (
-              <tr key={log.id} className="hover:bg-slate-800/30 transition-colors">
-                <td className="px-6 py-4 text-slate-400">{log.timestamp}</td>
-                <td className="px-6 py-4 font-mono text-slate-300">{log.resourceId}</td>
-                <td className="px-6 py-4 text-slate-300">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+              <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
+                <td className="px-6 py-4 text-slate-500">{log.timestamp}</td>
+                <td className="px-6 py-4 text-slate-300">{log.resourceId}</td>
+                <td className="px-6 py-4">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-sm text-[10px] uppercase font-bold tracking-wider border ${
                     log.reason.includes('Idle') || log.reason.includes('Overprovisioned') 
-                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
-                      : 'bg-red-500/10 text-red-400 border-red-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
+                      : 'bg-red-500/10 text-red-500 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
                   }`}>
                     {log.reason}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-slate-300 font-medium text-green-400">
+                <td className="px-6 py-4 font-bold text-emerald-500">
                   {log.action}
                 </td>
               </tr>

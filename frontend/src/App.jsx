@@ -1,149 +1,222 @@
 import React, { useState, useEffect } from 'react';
 import KPICards from './components/KPICards';
 import LiveChart from './components/LiveChart';
+import NodeMap from './components/NodeMap';
+import Terminal from './components/Terminal';
 import ActionLog from './components/ActionLog';
-import { Zap } from 'lucide-react';
+import { Zap, RefreshCw } from 'lucide-react';
 
-const initialChartData = Array.from({ length: 10 }).map((_, i) => ({
-  time: `T-${10 - i}`,
-  cpu: Math.floor(Math.random() * 11) + 10, // fluctuating between 10% and 20%
+const initialChartData = Array.from({ length: 15 }).map((_, i) => ({
+  time: `T-${15 - i}`,
+  actualCost: Math.random() * 2 + 10,
+  projectedCost: Math.random() * 2 + 10,
 }));
 
 const initialLogs = [
   {
     id: 1,
-    timestamp: '10:14:22 AM',
+    timestamp: new Date(Date.now() - 3600000).toLocaleTimeString(),
     resourceId: 'i-0abcd1234efgh5678',
     reason: 'Idle > 24h',
     action: 'Autonomously Stopped Instance'
-  },
-  {
-    id: 2,
-    timestamp: '09:42:05 AM',
-    resourceId: 'vol-0987654321fedcba',
-    reason: 'Unattached EBS Volume',
-    action: 'Snapshot & Delete'
   }
 ];
 
 function App() {
-  const [systemStatus, setSystemStatus] = useState('🟢 HEALTHY');
-  const [currentRunRate, setCurrentRunRate] = useState(0.12);
-  const [totalSavings, setTotalSavings] = useState(14.40);
+  const [status, setStatus] = useState('HEALTHY'); // 'HEALTHY', 'ANOMALY', 'REMEDIATING'
+  const [savings, setSavings] = useState(14.40);
   const [chartData, setChartData] = useState(initialChartData);
   const [logs, setLogs] = useState(initialLogs);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [offlineNodes, setOfflineNodes] = useState([]);
+  const [activeAnomalyNode, setActiveAnomalyNode] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Background fluctuation for chart when healthy
   useEffect(() => {
-    if (systemStatus !== '🟢 HEALTHY') return;
-    
+    if (status !== 'HEALTHY') return;
+
     const interval = setInterval(() => {
       setChartData(prev => {
         const newData = [...prev.slice(1)];
+        const activeCount = 8 - offlineNodes.length;
+        // Scale cost directly proportional to active nodes (0 nodes = $0.00/hr)
+        const baseCost = activeCount === 0 ? 0 : (activeCount * 1.2) + Math.random();
+        
         newData.push({
           time: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          cpu: Math.floor(Math.random() * 11) + 10 // 10% to 20%
+          actualCost: baseCost,
+          projectedCost: activeCount === 0 ? 0 : baseCost + Math.random() * 0.5
         });
         return newData;
       });
     }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [systemStatus]);
 
-  const handleSimulateChaos = () => {
+    return () => clearInterval(interval);
+  }, [status, offlineNodes.length]);
+
+  const simulateChaos = () => {
     if (isSimulating) return;
+
+    const availableNodes = [0, 1, 2, 3, 4, 5, 6, 7].filter(n => !offlineNodes.includes(n));
+    if (availableNodes.length === 0) {
+      alert("All nodes have been shut down! Refresh to reset.");
+      return;
+    }
+    const targetNode = availableNodes[Math.floor(Math.random() * availableNodes.length)];
+    setActiveAnomalyNode(targetNode);
     setIsSimulating(true);
 
-    // 1. Spike CPU immediately
+    const getTime = () => new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    // T=0s: status 'ANOMALY', spike actual and projected to $85
+    setStatus('ANOMALY');
     setChartData(prev => [
       ...prev.slice(1),
-      { time: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), cpu: 98 }
+      { time: getTime(), actualCost: 85, projectedCost: 85 }
     ]);
-    
-    // 2. Change status to ANOMALY DETECTED
-    setSystemStatus('🔴 ANOMALY DETECTED');
 
-    // 3. Wait 3 seconds, change to REMEDIATING...
+    // T=3s: status 'REMEDIATING'
     setTimeout(() => {
-      setSystemStatus('🔵 REMEDIATING...');
-      
-      // Keep CPU randomly high during remediation
+      setStatus('REMEDIATING');
       setChartData(prev => [
         ...prev.slice(1),
-        { time: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), cpu: 95 }
+        { time: getTime(), actualCost: 80, projectedCost: 88 }
       ]);
-      
-      // 4. Wait 2 seconds, Resolve to HEALTHY
+
+      // T=5s: status 'HEALTHY', drop actual cost. Keep projected high ($90). savings +$75.50
       setTimeout(() => {
-        // Drop CPU to 0%
+        setStatus('HEALTHY');
+        
+        // Calculate new base drop cost based on upcoming node count
+        const newActiveCount = 8 - offlineNodes.length - 1;
+        const dropCost = newActiveCount === 0 ? 0 : (newActiveCount * 1.2);
+
         setChartData(prev => [
           ...prev.slice(1),
-          { time: new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }), cpu: 0 }
+          { time: getTime(), actualCost: dropCost, projectedCost: 90 }
         ]);
-        
-        // Add action log row
-        const newLog = {
-          id: Date.now(),
-          timestamp: new Date().toLocaleTimeString(),
-          resourceId: 'i-chaos999spike00',
-          reason: 'CPU Anomaly > 95%',
-          action: 'Autonomously Stopped Instance'
-        };
-        setLogs(prev => [newLog, ...prev]);
-        
-        // Update Savings to 15.80
-        setTotalSavings(15.80);
-        
-        // Status back to HEALTHY
-        setSystemStatus('🟢 HEALTHY');
+
+        setOfflineNodes(prev => [...prev, targetNode]);
+        setActiveAnomalyNode(null);
+
+        setLogs(prev => [
+          {
+            id: Date.now(),
+            timestamp: new Date().toLocaleTimeString(),
+            resourceId: `i-core-node-${targetNode}`,
+            reason: 'CPU > 95% (Cost Spike)',
+            action: 'Autonomously Stopped Instance'
+          },
+          ...prev
+        ]);
+
+        setSavings(prev => prev + 75.50);
         setIsSimulating(false);
       }, 2000);
     }, 3000);
   };
 
+  const recoverNodes = () => {
+    if (offlineNodes.length === 0 || isSimulating) return;
+
+    const count = offlineNodes.length;
+    setOfflineNodes([]);
+
+    setLogs(prev => [
+      {
+        id: Date.now(),
+        timestamp: new Date().toLocaleTimeString(),
+        resourceId: 'auto-scaling-group',
+        reason: 'Capacity Rebalanced',
+        action: `Spun up ${count} Replacement Node${count > 1 ? 's' : ''}`
+      },
+      ...prev
+    ]);
+  };
+
+  const handleMouseMove = (e) => {
+    setMousePosition({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-6 md:p-10 selection:bg-neon-green/30">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
+    <div 
+      className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 md:p-8 selection:bg-emerald-500/30 relative overflow-hidden"
+      onMouseMove={handleMouseMove}
+    >
+      {/* Dynamic Cyberpunk Cursor Spotlight */}
+      <div 
+        className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300"
+        style={{
+          background: `radial-gradient(800px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(16, 185, 129, 0.08), transparent 80%)`
+        }}
+      />
+
+      <div className="max-w-7xl mx-auto space-y-6 relative z-10">
+
         {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 gap-6">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-emerald-500/20 pb-4 gap-4">
           <div className="flex items-center gap-4">
-            <div className="bg-[#39ff14]/10 p-3 rounded-xl border border-[#39ff14]/30 shadow-[0_0_15px_rgba(57,255,20,0.15)]">
-              <Zap className="text-[#39ff14] w-8 h-8" />
+            <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              <Zap className="text-emerald-500 w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                ⚡ FinOps Auto-Healer
+              <h1 className="text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 drop-shadow-md">
+                ⚡ CYBERPUNK FINOPS
               </h1>
-              <p className="text-slate-400 text-sm mt-1 font-medium tracking-wide">Cloud Cost Intelligence & Autonomous Remediation</p>
+              <p className="text-emerald-500/70 text-xs font-mono tracking-widest mt-1 uppercase">Autonomous Remediation Core</p>
             </div>
           </div>
-          
-          <button 
-            onClick={handleSimulateChaos}
-            disabled={isSimulating}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-bold tracking-wide transition-all duration-300 shadow-lg border ${
-              isSimulating 
-                ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed' 
-                : 'bg-red-500/10 text-red-500 border-red-500/50 hover:bg-red-500 hover:text-white hover:shadow-[0_0_20px_rgba(255,7,58,0.5)] active:scale-95'
-            }`}
-          >
-            <Zap className={`w-5 h-5 ${isSimulating ? '' : 'animate-pulse'}`} />
-            {isSimulating ? 'SYSTEM BUSY...' : 'Simulate Chaos (Spike CPU)'}
-          </button>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            {offlineNodes.length > 0 && (
+              <button
+                onClick={recoverNodes}
+                disabled={isSimulating}
+                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-black tracking-widest uppercase transition-all duration-300 border backdrop-blur-sm ${isSimulating
+                    ? 'bg-slate-900 border-slate-700 text-slate-500 cursor-not-allowed'
+                    : 'bg-emerald-500/10 border-emerald-500 text-emerald-500 hover:bg-emerald-500 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95'
+                  }`}
+              >
+                <RefreshCw className="w-5 h-5" />
+                Auto-Recover
+              </button>
+            )}
+            <button
+              onClick={simulateChaos}
+              disabled={isSimulating}
+              className={`flex items-center justify-center gap-2 px-8 py-3 rounded-lg font-black tracking-widest uppercase transition-all duration-300 border backdrop-blur-sm ${isSimulating
+                  ? 'bg-slate-900 border-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-red-500/10 border-red-500 text-red-500 hover:bg-red-500 hover:text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-95'
+                }`}
+            >
+              <Zap className={`w-5 h-5 ${isSimulating ? '' : 'animate-pulse'}`} />
+              {isSimulating ? 'System Busy...' : 'Simulate Chaos'}
+            </button>
+          </div>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="animate-in fade-in zoom-in-95 duration-500">
-          <KPICards 
-            systemStatus={systemStatus} 
-            totalSavings={totalSavings} 
-            currentRunRate={currentRunRate} 
-          />
-          <LiveChart data={chartData} />
-          <ActionLog logs={logs} />
+        <main className="animate-in fade-in duration-700 glassmorphism space-y-6">
+          {/* Row 1: KPI Cards */}
+          <section className="w-full">
+            <KPICards status={status} savings={savings} chartData={chartData} />
+          </section>
+
+          {/* Row 2: Grid Layout (Chart 2/3, Maps/Terminal 1/3) */}
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <LiveChart data={chartData} />
+            </div>
+            <div className="flex flex-col gap-6 lg:col-span-1">
+              <NodeMap status={status} activeAnomalyNode={activeAnomalyNode} offlineNodes={offlineNodes} />
+              <Terminal status={status} />
+            </div>
+          </section>
+
+          {/* Row 3: Action Log */}
+          <section className="w-full">
+            <ActionLog logs={logs} />
+          </section>
         </main>
       </div>
     </div>
