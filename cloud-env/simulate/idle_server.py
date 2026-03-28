@@ -34,4 +34,4 @@ while True:
     )
     
     print(f"[{now}] 📊 Sent idle metric to CloudWatch - CPU: 2%")
-    time.sleep(60)  # wait 60 seconds and repeat
+    time.sleep(10)  # wait 60 seconds and repeat

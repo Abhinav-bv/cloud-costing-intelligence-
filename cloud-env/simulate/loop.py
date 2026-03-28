@@ -17,7 +17,7 @@ lambda_client = boto3.client(
 
 print("🔁 Lambda loop simulation started...")
 
-for i in range(10):
+for i in range(50):
     now = datetime.utcnow()
     
     # Invoke Lambda function
