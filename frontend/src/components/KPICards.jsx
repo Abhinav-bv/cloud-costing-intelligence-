@@ -1,7 +1,7 @@
 import React from 'react';
 import { Activity, DollarSign, Server } from 'lucide-react';
 
-const KPICards = ({ status, savings, chartData }) => {
+const KPICards = ({ status, savings, runRate, chartData, activeAssets }) => {
   // Determine color theme based on status
   let statusColor = 'text-emerald-500';
   let dotColor = 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]';
@@ -17,7 +17,7 @@ const KPICards = ({ status, savings, chartData }) => {
     borderColor = 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]';
   }
 
-  const currentRunRate = chartData.length > 0 ? chartData[chartData.length - 1].actualCost : 0;
+  const currentRunRate = runRate ?? (chartData.length > 0 ? chartData[chartData.length - 1].actualCost : 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -59,6 +59,9 @@ const KPICards = ({ status, savings, chartData }) => {
             ${savings.toFixed(2)}
           </span>
           <span className="text-slate-500 ml-2 font-mono text-sm">YTD</span>
+        </div>
+        <div className="mt-4 text-slate-400 text-xs font-mono uppercase tracking-widest">
+          Active assets: {activeAssets}
         </div>
       </div>
     </div>
