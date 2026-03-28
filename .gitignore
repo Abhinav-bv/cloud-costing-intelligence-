@@ -209,3 +209,7 @@ __marimo__/
 metrics.db
 __pycache__/
 *.pyc
+
+# Local frontend and runtime artifacts
+/frontend/.vite/
+/node-v24.14.1-win-x64/
