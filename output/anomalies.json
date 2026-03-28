@@ -3,16 +3,16 @@
     "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
     "hour": "2026-03-28 07:00:00+00:00",
     "anomaly": false,
-    "confidence": 0.1836,
-    "reason": "lambdainvocations deviated from normal baseline (score=1.10)",
+    "confidence": 0.1749,
+    "reason": "lambdainvocations deviated from normal baseline (score=1.05)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
     "hour": "2026-03-28 09:15:00+00:00",
     "anomaly": false,
-    "confidence": 0.1237,
-    "reason": "lambdainvocations deviated from normal baseline (score=0.74)",
+    "confidence": 0.1178,
+    "reason": "lambdainvocations deviated from normal baseline (score=0.71)",
     "model_name": "robust_zscore_v1"
   },
   {
@@ -27,16 +27,16 @@
     "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
     "hour": "2026-03-28 10:35:00+00:00",
     "anomaly": false,
-    "confidence": 0.1124,
-    "reason": "lambdainvocations deviated from normal baseline (score=0.67)",
+    "confidence": 0.1071,
+    "reason": "lambdainvocations deviated from normal baseline (score=0.64)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
     "hour": "2026-03-28 11:25:00+00:00",
     "anomaly": false,
-    "confidence": 0.0296,
-    "reason": "lambdainvocations deviated from normal baseline (score=0.18)",
+    "confidence": 0.0282,
+    "reason": "lambdainvocations deviated from normal baseline (score=0.17)",
     "model_name": "robust_zscore_v1"
   },
   {
@@ -51,184 +51,200 @@
     "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
     "hour": "2026-03-28 18:00:00+00:00",
     "anomaly": false,
-    "confidence": 0.1237,
-    "reason": "lambdainvocations deviated from normal baseline (score=0.74)",
+    "confidence": 0.1178,
+    "reason": "lambdainvocations deviated from normal baseline (score=0.71)",
+    "model_name": "robust_zscore_v1"
+  },
+  {
+    "resource_id": "arn:aws:lambda:us-east-1:457563661765:function:hackathon-loop-function",
+    "hour": "2026-03-28 18:50:00+00:00",
+    "anomaly": false,
+    "confidence": 0.1642,
+    "reason": "lambdainvocations deviated from normal baseline (score=0.98)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 05:20:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 05:25:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 05:30:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 05:45:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 06:00:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 06:35:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 06:50:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 07:00:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 07:30:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 09:15:00+00:00",
     "anomaly": false,
-    "confidence": 0.163,
-    "reason": "networktraffic deviated from normal baseline (score=0.98)",
+    "confidence": 0.0636,
+    "reason": "networktraffic deviated from normal baseline (score=0.38)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 09:55:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.0,
+    "reason": "Insufficient signal for anomaly reasoning",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 10:30:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 10:35:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 10:45:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 10:55:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 11:20:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 11:25:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 13:35:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.2044,
+    "reason": "networktraffic deviated from normal baseline (score=1.23)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 13:45:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 17:05:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 17:10:00+00:00",
     "anomaly": false,
-    "confidence": 0.1483,
-    "reason": "networktraffic deviated from normal baseline (score=0.89)",
+    "confidence": 0.1652,
+    "reason": "networktraffic deviated from normal baseline (score=0.99)",
     "model_name": "robust_zscore_v1"
   },
   {
     "resource_id": "i-0f5e312cdb1ea9b00",
     "hour": "2026-03-28 18:00:00+00:00",
     "anomaly": false,
-    "confidence": 0.0765,
-    "reason": "networktraffic deviated from normal baseline (score=0.46)",
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
+    "model_name": "robust_zscore_v1"
+  },
+  {
+    "resource_id": "i-0f5e312cdb1ea9b00",
+    "hour": "2026-03-28 18:50:00+00:00",
+    "anomaly": false,
+    "confidence": 0.1124,
+    "reason": "networktraffic deviated from normal baseline (score=0.67)",
     "model_name": "robust_zscore_v1"
   }
 ]
