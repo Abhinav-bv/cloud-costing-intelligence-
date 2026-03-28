@@ -38,8 +38,9 @@ GCP_CREDENTIALS_PATH = os.getenv("GCP_CREDENTIALS_PATH", None)
 # DATA PIPELINE SETTINGS
 # ============================================================================
 
-# Resource IDs to monitor (EC2 instances, RDS DBs, GCP resources)
-MONITORED_RESOURCES = os.getenv("MONITORED_RESOURCES", "res-001,res-002,res-003").split(",")
+# Resource IDs to monitor (EC2 instances, RDS DBs, Lambda functions)
+# Example value in .env: MONITORED_RESOURCES=i-0123456789abcdef0,db-ABCDEFGHIJKLMNOP,lambda:us-east-1:123456789012:function:my-func
+MONITORED_RESOURCES = os.getenv("MONITORED_RESOURCES", "i-0123456789abcdef0,db-ABCDEFGHIJKLMNOP,lambda:us-east-1:123456789012:function:my-func").split(",")
 
 # Data collection interval (minutes)
 COLLECTION_INTERVAL = int(os.getenv("COLLECTION_INTERVAL", 5))

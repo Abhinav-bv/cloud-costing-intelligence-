@@ -59,7 +59,7 @@ class CloudWatchCollector:
             )
             
             datapoints = response.get("Datapoints", [])
-            logger.info(f"✅ Fetched {len(datapoints)} {metric_name} datapoints from {namespace}")
+            logger.info(f"Fetched {len(datapoints)} {metric_name} datapoints from {namespace}")
             return datapoints
             
         except Exception as e:
@@ -99,43 +99,7 @@ class CloudWatchCollector:
                     timestamp=dp["Timestamp"].isoformat()
                 )
         
-        logger.info(f"✅ Collected EC2 metrics for {instance_id}")
-        return results
-    
-    def collect_rds_metrics(self, db_identifier: str,
-                           metrics: List[str] = None) -> Dict[str, List]:
-        """
-        Collect RDS database metrics.
-        
-        Args:
-            db_identifier: RDS DB instance identifier
-            metrics: List of metric names (default: CPUUtilization, DatabaseConnections)
-        
-        Returns:
-            Dict with metric name as key and datapoints list as value
-        """
-        if metrics is None:
-            metrics = ["CPUUtilization", "DatabaseConnections", "FreeableMemory"]
-        
-        results = {}
-        for metric_name in metrics:
-            datapoints = self.fetch_metric_statistics(
-                namespace="AWS/RDS",
-                metric_name=metric_name,
-                dimensions={"DBInstanceIdentifier": db_identifier}
-            )
-            results[metric_name] = datapoints
-            
-            # Store in database
-            for dp in datapoints:
-                insert_metric(
-                    resource_id=db_identifier,
-                    metric_name=metric_name.lower(),
-                    metric_value=dp.get("Average", 0),
-                    timestamp=dp["Timestamp"].isoformat()
-                )
-        
-        logger.info(f"✅ Collected RDS metrics for {db_identifier}")
+        logger.info(f"Collected EC2 metrics for {instance_id}")
         return results
     
     def collect_lambda_metrics(self, function_name: str,
@@ -180,9 +144,3 @@ def fetch_ec2_cpu(instance_id: str):
     """Fetch EC2 CPU utilization and insert into DB."""
     collector = CloudWatchCollector()
     collector.collect_ec2_metrics(instance_id, metrics=["CPUUtilization"])
-
-
-def fetch_rds_cpu(db_identifier: str):
-    """Fetch RDS CPU utilization and insert into DB."""
-    collector = CloudWatchCollector()
-    collector.collect_rds_metrics(db_identifier, metrics=["CPUUtilization"])

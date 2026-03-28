@@ -53,7 +53,7 @@ def collect_cloudwatch_metrics(resources: list = None):
         resources: List of resource IDs to monitor (uses config default if None)
     """
     logger.info("=" * 60)
-    logger.info("🔵 COLLECT: CloudWatch Metrics")
+    logger.info("COLLECT: CloudWatch Metrics")
     logger.info("=" * 60)
     
     if resources is None:
@@ -63,37 +63,32 @@ def collect_cloudwatch_metrics(resources: list = None):
     
     # Map resource patterns to collector methods
     for resource_id in resources:
-        logger.info(f"\n📍 Collecting metrics for: {resource_id}")
+        logger.info(f"\nCollecting metrics for: {resource_id}")
         
         # Detect resource type from ID pattern
         if resource_id.startswith("i-"):
-            logger.info(f"  → Detected as EC2 instance")
+            logger.info(f"  -> Detected as EC2 instance")
             collector.collect_ec2_metrics(resource_id)
         
-        elif resource_id.startswith("rds-"):
-            logger.info(f"  → Detected as RDS database")
-            collector.collect_rds_metrics(resource_id)
-        
-        elif resource_id.startswith("lambda-"):
-            logger.info(f"  → Detected as Lambda function")
+        elif resource_id.startswith("arn:aws:lambda:") or resource_id.startswith("lambda-"):
+            logger.info(f"  -> Detected as Lambda function")
             collector.collect_lambda_metrics(resource_id)
-        
+
         else:
-            logger.warning(f"  ⚠️  Unknown resource type: {resource_id}")
-    
-    logger.info("\n✅ CloudWatch collection complete!\n")
+            logger.warning(f"  WARNING: Unknown resource type: {resource_id}")
+    logger.info("\nCloudWatch collection complete!\n")
 
 
 def collect_billing_data():
     """Collect cost and usage data from AWS Cost Explorer"""
     logger.info("=" * 60)
-    logger.info("💰 COLLECT: Billing Data")
+    logger.info("COLLECT: Billing Data")
     logger.info("=" * 60)
     
     pipeline = BillingDataPipeline()
     
     # Collect costs by service
-    logger.info("\n📊 Collecting costs by service (past 7 days)...")
+    logger.info("\nCollecting costs by service (past 7 days)...")
     service_costs = pipeline.collect_costs_by_service(days_back=7)
     
     logger.info(f"\nTop services by cost:")
@@ -101,7 +96,7 @@ def collect_billing_data():
         logger.info(f"  • {service}: ${cost:.2f}")
     
     # Collect costs by resource
-    logger.info("\n📦 Collecting costs by resource (past 7 days)...")
+    logger.info("\nCollecting costs by resource (past 7 days)...")
     resource_costs = pipeline.collect_costs_by_resource(days_back=7)
     
     if resource_costs:
@@ -109,7 +104,7 @@ def collect_billing_data():
         for resource, cost in sorted(resource_costs.items(), key=lambda x: x[1], reverse=True)[:10]:
             logger.info(f"  • {resource}: ${cost:.2f}")
     
-    logger.info("\n✅ Billing collection complete!\n")
+    logger.info("\nBilling collection complete!\n")
 
 
 def clean_and_prepare_data():
@@ -124,7 +119,7 @@ def clean_and_prepare_data():
     5. Export to CSV for ML model
     """
     logger.info("=" * 60)
-    logger.info("🧹 CLEAN: Prepare ML Dataset")
+    logger.info("CLEAN: Prepare ML Dataset")
     logger.info("=" * 60)
     
     cleaner = DataCleaner()
@@ -133,13 +128,13 @@ def clean_and_prepare_data():
     if not ml_ready_df.empty:
         logger.info("\n" + cleaner.generate_summary(ml_ready_df))
     
-    logger.info("\n✅ Data cleaning complete!\n")
+    logger.info("\nData cleaning complete!\n")
 
 
 def run_full_pipeline():
     """Execute complete pipeline: collect → collect billing → clean"""
     logger.info("\n" + "=" * 60)
-    logger.info("🚀 RUNNING FULL DATA PIPELINE")
+    logger.info("RUNNING FULL DATA PIPELINE")
     logger.info("=" * 60)
     
     try:
@@ -153,18 +148,20 @@ def run_full_pipeline():
         clean_and_prepare_data()
         
         logger.info("\n" + "=" * 60)
-        logger.info("✅ FULL PIPELINE COMPLETE - All steps succeeded!")
+        logger.info("FULL PIPELINE COMPLETE - All steps succeeded!")
         logger.info("=" * 60)
-        logger.info(f"\n📁 Output files saved to: {OUTPUT_DIR}/")
-        logger.info(f"📊 ML-ready dataset: ml_ready_data.csv")
-        logger.info(f"📝 Logs: {LOG_FILE}\n")
+        logger.info(f"\nOutput files saved to: {OUTPUT_DIR}/")
+        logger.info(f"ML-ready dataset: ml_ready_data.csv")
+        logger.info(f"Logs: {LOG_FILE}\n")
         
         return True
         
     except Exception as e:
         logger.error("\n" + "=" * 60)
-        logger.error(f"❌ PIPELINE FAILED: {e}")
+        logger.error(f"PIPELINE FAILED: {e}")
         logger.error("=" * 60 + "\n")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return False
 
 

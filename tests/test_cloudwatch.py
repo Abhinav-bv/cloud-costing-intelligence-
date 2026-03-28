@@ -31,7 +31,7 @@ def patch_insert(monkeypatch):
 @mock_aws
 def test_fetch_ec2_cpu_inserts_metrics():
     client = boto3.client("cloudwatch", region_name="us-east-1")
-    now = datetime.now(timezone.utc)  # timezone-aware
+    now = datetime.now(timezone.utc)
 
     client.put_metric_data(
         Namespace="AWS/EC2",
@@ -48,25 +48,3 @@ def test_fetch_ec2_cpu_inserts_metrics():
     assert len(inserted_metrics) > 0, "No metrics were inserted for EC2"
     assert inserted_metrics[0]["metric_name"] == "cpu_usage"
     assert inserted_metrics[0]["metric_value"] == 42.0
-
-
-@mock_aws
-def test_fetch_rds_cpu_inserts_metrics():
-    client = boto3.client("cloudwatch", region_name="us-east-1")
-    now = datetime.now(timezone.utc)  # timezone-aware
-
-    client.put_metric_data(
-        Namespace="AWS/RDS",
-        MetricData=[{
-            "MetricName": "CPUUtilization",
-            "Dimensions": [{"Name": "DBInstanceIdentifier", "Value": "db-123456"}],
-            "Value": 55.0,
-            "Timestamp": now
-        }]
-    )
-
-    collector.fetch_rds_cpu("db-123456")
-
-    assert len(inserted_metrics) > 0, "No metrics were inserted for RDS"
-    assert inserted_metrics[0]["metric_name"] == "cpu_usage"
-    assert inserted_metrics[0]["metric_value"] == 55.0

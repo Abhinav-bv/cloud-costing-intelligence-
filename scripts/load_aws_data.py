@@ -1,6 +1,6 @@
 """
 load_aws_data.py
-Load JSON data from AWS S3 or local file into SQLite/RDS
+Load JSON data from AWS S3 or local file into SQLite
 """
 
 import json
@@ -11,7 +11,6 @@ from typing import Dict, Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aws_utils import RDSConnection, import_json_to_rds
 from config import LOCAL_DB_CONFIG
 import sqlite3
 
@@ -102,13 +101,8 @@ def load_from_s3_json(bucket: str, key: str, target: str = "both"):
         resources = data.get("resources", [])
         metrics = data.get("metrics", [])
         
-        if target in ["sqlite", "both"]:
-            _insert_sqlite_data(resources, metrics)
-        
-        if target in ["rds", "both"]:
-            _insert_rds_data(resources, metrics)
-        
-        print(f"✅ Loaded {len(resources)} resources and {len(metrics)} metrics from S3")
+        _insert_sqlite_data(resources, metrics)
+        print(f"Loaded {len(resources)} resources and {len(metrics)} metrics from S3")
         
     except Exception as e:
         print(f"❌ Error loading from S3: {e}")
@@ -140,45 +134,21 @@ def _insert_sqlite_data(resources: list, metrics: list):
     conn.close()
 
 
-def _insert_rds_data(resources: list, metrics: list):
-    """Helper to insert data into RDS"""
-    rds = RDSConnection().connect()
-    
-    for resource in resources:
-        try:
-            rds.execute(
-                "INSERT INTO resources (resource_id, cloud_provider) VALUES (%s, %s)",
-                (resource["resource_id"], resource["cloud_provider"])
-            )
-        except Exception:
-            pass
-    
-    for metric in metrics:
-        rds.execute(
-            """INSERT INTO metrics (resource_id, metric_name, metric_value, timestamp)
-               VALUES (%s, %s, %s, %s)""",
-            (metric["resource_id"], metric["metric_name"], metric["metric_value"], metric["timestamp"])
-        )
-    
-    rds.commit()
-    rds.close()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Load AWS data from JSON/S3")
+    parser = argparse.ArgumentParser(description="Load AWS data from JSON/S3 into SQLite")
     
     parser.add_argument("--local-file", help="Load from local JSON file")
     parser.add_argument("--s3-bucket", help="S3 bucket name")
     parser.add_argument("--s3-key", help="S3 object key")
-    parser.add_argument("--target", choices=["sqlite", "rds", "both"], default="both",
-                       help="Target database")
     
     args = parser.parse_args()
     
     if args.local_file:
         load_json_to_sqlite(args.local_file)
     elif args.s3_bucket and args.s3_key:
-        load_from_s3_json(args.s3_bucket, args.s3_key, args.target)
+        load_from_s3_json(args.s3_bucket, args.s3_key)
     else:
         print("Usage:")
         print("  Local JSON: python load_aws_data.py --local-file data/sample_data.json")

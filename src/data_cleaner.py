@@ -34,11 +34,11 @@ class DataCleaner:
             df = pd.read_sql_query(query, conn)
             conn.close()
             
-            logger.info(f"✅ Loaded {len(df)} raw metric records")
+            logger.info(f"Loaded {len(df)} raw metric records")
             return df
             
         except Exception as e:
-            logger.error(f"❌ Error loading raw metrics: {e}")
+            logger.error(f"Error loading raw metrics: {e}")
             return pd.DataFrame()
     
     def load_billing_data(self) -> pd.DataFrame:
@@ -54,11 +54,11 @@ class DataCleaner:
             df = pd.read_sql_query(query, conn)
             conn.close()
             
-            logger.info(f"✅ Loaded {len(df)} billing records")
+            logger.info(f"Loaded {len(df)} billing records")
             return df
             
         except Exception as e:
-            logger.error(f"❌ Error loading billing data: {e}")
+            logger.error(f"Error loading billing data: {e}")
             return pd.DataFrame()
     
     def clean_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -78,54 +78,70 @@ class DataCleaner:
             Cleaned DataFrame
         """
         if df.empty:
-            logger.warning("⚠️  No data to clean")
+            logger.warning("No data to clean")
             return df
         
         df = df.copy()
         
-        # Convert timestamp to datetime
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # Convert timestamp to datetime (handle mixed formats + timezone offsets)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='mixed', utc=True)
         
-        logger.info("🔧 Cleaning metrics data...")
+        logger.info("Cleaning metrics data...")
         
         # 1. Handle missing values - forward fill then backward fill
         logger.info(f"  - Missing values before: {df['metric_value'].isna().sum()}")
-        df['metric_value'] = df['metric_value'].fillna(method='ffill').fillna(method='bfill')
+        df['metric_value'] = df['metric_value'].ffill().bfill()
         logger.info(f"  - Missing values after: {df['metric_value'].isna().sum()}")
         
         # 2. Detect and remove outliers using IQR method
-        def remove_outliers(group):
-            Q1 = group['metric_value'].quantile(0.25)
-            Q3 = group['metric_value'].quantile(0.75)
-            IQR = Q3 - Q1
-            lower_bound = Q1 - 1.5 * IQR
-            upper_bound = Q3 + 1.5 * IQR
+        logger.info(f"  - Removing outliers...")
+        try:
+            # Group by metric_name and remove outliers for each metric
+            outliers_mask = pd.Series([False] * len(df), index=df.index)
             
-            outlier_count = ((group['metric_value'] < lower_bound) | (group['metric_value'] > upper_bound)).sum()
-            if outlier_count > 0:
-                logger.info(f"  - Removed {outlier_count} outliers from {group.name}")
+            for metric in df['metric_name'].unique():
+                metric_data = df[df['metric_name'] == metric]
+                Q1 = metric_data['metric_value'].quantile(0.25)
+                Q3 = metric_data['metric_value'].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                
+                # Mark outliers for this metric
+                outlier_indices = metric_data[
+                    (metric_data['metric_value'] < lower_bound) | 
+                    (metric_data['metric_value'] > upper_bound)
+                ].index
+                
+                outlier_count = len(outlier_indices)
+                if outlier_count > 0:
+                    logger.info(f"    - Removed {outlier_count} outliers from {metric}")
+                    outliers_mask[outlier_indices] = True
             
-            return group[(group['metric_value'] >= lower_bound) & (group['metric_value'] <= upper_bound)]
-        
-        original_len = len(df)
-        df = df.groupby('metric_name').apply(remove_outliers).reset_index(drop=True)
-        removed = original_len - len(df)
-        logger.info(f"  - Removed {removed} outlier records")
+            original_len = len(df)
+            df = df[~outliers_mask].copy()
+            removed = original_len - len(df)
+            logger.info(f"  - Total removed: {removed} outlier records")
+        except Exception as e:
+            logger.warning(f"  - Error removing outliers: {e}")
         
         # 3. Normalize values to 0-100 range per metric
-        def normalize_metric(group):
-            min_val = group['metric_value'].min()
-            max_val = group['metric_value'].max()
-            if max_val > min_val:
-                group['metric_value_normalized'] = (group['metric_value'] - min_val) / (max_val - min_val) * 100
-            else:
-                group['metric_value_normalized'] = group['metric_value']
-            return group
+        logger.info(f"  - Normalizing metrics to 0-100 range...")
+        try:
+            for metric in df['metric_name'].unique():
+                metric_mask = df['metric_name'] == metric
+                min_val = df.loc[metric_mask, 'metric_value'].min()
+                max_val = df.loc[metric_mask, 'metric_value'].max()
+                
+                if max_val > min_val:
+                    df.loc[metric_mask, 'metric_value'] = (
+                        (df.loc[metric_mask, 'metric_value'] - min_val) / 
+                        (max_val - min_val) * 100
+                    )
+        except Exception as e:
+            logger.warning(f"  - Error normalizing: {e}")
         
-        df = df.groupby('metric_name').apply(normalize_metric).reset_index(drop=True)
-        logger.info(f"  - Normalized metrics to 0-100 range")
-        
-        logger.info(f"✅ Cleaned: {len(df)} records")
+        logger.info(f"Cleaned: {len(df)} records")
         return df
     
     def clean_billing(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -139,15 +155,15 @@ class DataCleaner:
             Cleaned DataFrame
         """
         if df.empty:
-            logger.warning("⚠️  No billing data to clean")
+            logger.warning("No billing data to clean")
             return df
         
         df = df.copy()
         
-        logger.info("🔧 Cleaning billing data...")
+        logger.info("Cleaning billing data...")
         
-        # Convert date to datetime
-        df['date'] = pd.to_datetime(df['date'])
+        # Convert date to datetime (handle mixed formats)
+        df['date'] = pd.to_datetime(df['date'], format='mixed', utc=True)
         
         # Handle missing costs
         logger.info(f"  - Missing costs before: {df['cost'].isna().sum()}")
@@ -160,7 +176,7 @@ class DataCleaner:
             logger.info(f"  - Removed {negative_count} negative cost entries (refunds)")
             df = df[df['cost'] >= 0]
         
-        logger.info(f"✅ Cleaned: {len(df)} billing records")
+        logger.info(f"Cleaned: {len(df)} billing records")
         return df
     
     def aggregate_metrics_hourly(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -176,10 +192,10 @@ class DataCleaner:
         if df.empty:
             return df
         
-        logger.info("📊 Aggregating metrics to hourly...")
+        logger.info("Aggregating metrics to hourly...")
         
         # Round timestamp to nearest hour
-        df['hour'] = df['timestamp'].dt.floor('H')
+        df['hour'] = df['timestamp'].dt.floor('h')
         
         # Group by resource, metric, and hour - calculate mean
         agg_df = df.groupby(['resource_id', 'metric_name', 'hour']).agg({
@@ -189,7 +205,7 @@ class DataCleaner:
         # Flatten column names
         agg_df.columns = ['resource_id', 'metric_name', 'hour', 'mean', 'min', 'max', 'std']
         
-        logger.info(f"✅ Aggregated to {len(agg_df)} hourly records")
+        logger.info(f"Aggregated to {len(agg_df)} hourly records")
         return agg_df
     
     def pivot_metrics(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -205,7 +221,7 @@ class DataCleaner:
         if df.empty:
             return df
         
-        logger.info("🔄 Pivoting metrics to columns...")
+        logger.info("Pivoting metrics to columns...")
         
         # Pivot metric_name to columns
         pivot_df = df.pivot_table(
@@ -215,7 +231,7 @@ class DataCleaner:
             aggfunc='first'
         ).reset_index()
         
-        logger.info(f"✅ Pivoted to {len(pivot_df)} records with {len(pivot_df.columns)} columns")
+        logger.info(f"Pivoted to {len(pivot_df)} records with {len(pivot_df.columns)} columns")
         return pivot_df
     
     def prepare_ml_dataset(self, output_path: str = None) -> pd.DataFrame:
@@ -232,13 +248,13 @@ class DataCleaner:
             output_path = f"{OUTPUT_DIR}/{ML_READY_CSV}"
         
         logger.info("=" * 60)
-        logger.info("🚀 STARTING DATA CLEANING PIPELINE")
+        logger.info("STARTING DATA CLEANING PIPELINE")
         logger.info("=" * 60)
         
         # Load raw data
         raw_metrics = self.load_raw_metrics()
         if raw_metrics.empty:
-            logger.error("❌ No metrics data to process")
+            logger.error("No metrics data to process")
             return pd.DataFrame()
         
         # Clean metrics
@@ -251,16 +267,16 @@ class DataCleaner:
         ml_ready_df = self.pivot_metrics(hourly_metrics)
         
         # Fill remaining NaN with forward fill then backward fill
-        ml_ready_df = ml_ready_df.fillna(method='ffill').fillna(method='bfill')
+        ml_ready_df = ml_ready_df.ffill().bfill()
         
         # Save to CSV
         import os
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         ml_ready_df.to_csv(output_path, index=False)
-        logger.info(f"✅ Saved ML-ready data to {output_path}")
+        logger.info(f"Saved ML-ready data to {output_path}")
         
         # Print dataset info
-        logger.info("\n📈 DATASET STATISTICS:")
+        logger.info("\nDATASET STATISTICS:")
         logger.info(f"  - Records: {len(ml_ready_df)}")
         logger.info(f"  - Features: {len(ml_ready_df.columns)}")
         logger.info(f"  - Date range: {ml_ready_df['hour'].min()} to {ml_ready_df['hour'].max()}")
