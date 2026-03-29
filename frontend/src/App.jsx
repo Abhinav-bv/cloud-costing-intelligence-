@@ -31,6 +31,8 @@ function App() {
   const [offlineNodes, setOfflineNodes] = useState([]);
   const [activeAnomalyNode, setActiveAnomalyNode] = useState(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [backendStats, setBackendStats] = useState(null);
+  const [backendError, setBackendError] = useState(null);
 
   // Background fluctuation for chart when healthy
   useEffect(() => {
@@ -54,6 +56,27 @@ function App() {
 
     return () => clearInterval(interval);
   }, [status, offlineNodes.length]);
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((stats) => {
+        setBackendStats(stats);
+      })
+      .catch((error) => {
+        console.error('Failed to load backend stats:', error);
+        setBackendError('Backend unavailable');
+      });
+  }, []);
+
+  const displaySavings = backendStats?.total_savings ?? savings;
+  const displayRunRate = backendStats?.current_run_rate ?? (chartData.length > 0 ? chartData[chartData.length - 1].actualCost : 0);
+  const activeAssets = backendStats?.active_assets ?? 0;
 
   const simulateChaos = () => {
     if (isSimulating) return;
@@ -199,8 +222,19 @@ function App() {
         <main className="animate-in fade-in duration-700 glassmorphism space-y-6">
           {/* Row 1: KPI Cards */}
           <section className="w-full">
-            <KPICards status={status} savings={savings} chartData={chartData} />
+            <KPICards
+              status={status}
+              savings={displaySavings}
+              runRate={displayRunRate}
+              chartData={chartData}
+              activeAssets={activeAssets}
+            />
           </section>
+          {backendError && (
+            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-200 text-sm">
+              Backend connection warning: {backendError}. Make sure the Flask API is running at <code>http://127.0.0.1:5000</code>.
+            </div>
+          )}
 
           {/* Row 2: Grid Layout (Chart 2/3, Maps/Terminal 1/3) */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
