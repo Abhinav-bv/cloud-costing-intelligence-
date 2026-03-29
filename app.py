@@ -6,10 +6,11 @@ Gunicorn will use this to start the Flask application
 import os
 import sys
 
-# Add src directory to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'anomaly_detection'))
+# Add the project root to Python path
+sys.path.insert(0, os.path.dirname(__file__))
 
-from server import app
+# Import the Flask app from the anomaly_detection module
+from src.anomaly_detection.server import app
 
 if __name__ == '__main__':
     app.run()
