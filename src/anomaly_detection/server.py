@@ -6,7 +6,8 @@ import sys
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 
-from cost_tracker import get_dashboard_stats
+from cost_tracker import get_dashboard_stats, log_intervention
+from flask import request as flask_request
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +22,26 @@ def stats():
 @app.route('/health')
 def health():
     return jsonify({"status": "healthy"}), 200
+
+
+@app.route('/api/log_intervention', methods=['POST'])
+def log_intervention_api():
+    data = None
+    try:
+        data = flask_request.get_json()
+    except Exception:
+        data = None
+
+    if not data:
+        return jsonify({"error": "invalid payload"}), 400
+
+    resource_id = data.get('resource_id')
+    action_type = data.get('action_type', 'autonomously_stopped')
+    anomaly_score = data.get('anomaly_score', 0.0)
+    savings_usd = data.get('savings_usd', 0.0)
+
+    entry = log_intervention(resource_id, action_type, anomaly_score, savings_usd)
+    return jsonify(entry), 201
 
 if __name__ == '__main__':
     # For local development: use port 5000

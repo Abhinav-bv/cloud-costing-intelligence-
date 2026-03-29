@@ -133,8 +133,22 @@ function App() {
           },
           ...prev
         ]);
+        // Report intervention to backend so totals persist
+        const resourceId = `i-core-node-${targetNode}`;
+        const savingsReported = 75.50;
+        fetch('/api/log_intervention', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resource_id: resourceId, action_type: 'autonomously_stopped', anomaly_score: 0.0, savings_usd: savingsReported })
+        }).then(() => {
+          // refresh backend stats after logging
+          fetch('/api/stats')
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then((stats) => setBackendStats(stats))
+            .catch(() => {});
+        }).catch(() => {});
 
-        setSavings(prev => prev + 75.50);
+        setSavings(prev => prev + savingsReported);
         setIsSimulating(false);
       }, 2000);
     }, 3000);
