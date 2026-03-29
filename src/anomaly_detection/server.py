@@ -18,6 +18,15 @@ CSV_PATH = os.path.join(PROJECT_ROOT, 'ml_ready_data.csv')
 def stats():
     return jsonify(get_dashboard_stats(CSV_PATH))
 
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy"}), 200
+
 if __name__ == '__main__':
-    print('🚀 API Server online at http://localhost:5000/api/stats')
-    app.run(port=5000, debug=True)
+    # For local development: use port 5000
+    # For Render: use PORT environment variable (set by Render)
+    port = int(os.getenv('PORT', 5000))
+    debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
+    
+    print(f'🚀 API Server online at http://localhost:{port}/api/stats')
+    app.run(host='0.0.0.0', port=port, debug=debug)
