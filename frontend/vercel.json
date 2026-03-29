@@ -10,6 +10,7 @@
     }
   ],
   "routes": [
+    { "handle": "filesystem" },
     {
       "src": "^/api/(.*)$",
       "dest": "https://cloud-costing-intelligence.onrender.com/api/$1"
